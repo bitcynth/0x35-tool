@@ -98,17 +98,6 @@ func pdnsGetZone(zoneName string) (pdnsZone, error) {
 // This method checks for changes that need to be made to the server zone.
 // This function is quite massive and could probably be a lot cleaner.
 func pdnsGetZoneChanges(initialZone pdnsZone, header zoneFileHeader, entries []zoneFileEntry) (map[string]pdnsRRSet, error) {
-	// Check if this is an update or creation
-	isNewZone := false
-	if initialZone.Name == "" {
-		isNewZone = true
-	}
-
-	url := fmt.Sprintf("%s/api/v1/servers/%s/zones", config.BaseURL, config.ServerID)
-	if !isNewZone {
-		url = fmt.Sprintf("%s/%s", url, header.Name)
-	}
-
 	// Entries are grouped by record type and name, example: "@-ALIAS"
 	rrSets := make(map[string]pdnsRRSet)
 	for _, entry := range entries {
@@ -227,6 +216,51 @@ func pdnsGetZoneChanges(initialZone pdnsZone, header zoneFileHeader, entries []z
 	}
 
 	return rrSetChanges, nil
+}
+
+// This executes and update of the zone from the RRSet changes supplied.
+func pdnsUpdateZone(rrSetChanges map[string]pdnsRRSet, isNewZone bool, header zoneFileHeader) error {
+	payload := pdnsZone{}
+
+	url := fmt.Sprintf("%s/api/v1/servers/%s/zones", config.BaseURL, config.ServerID)
+	if !isNewZone {
+		url = fmt.Sprintf("%s/%s", url, header.Name)
+	}
+
+	// Loop through the RRSet changes and add them to the payload.
+	for _, rrSet := range rrSetChanges {
+		if rrSet.ChangeType == "ADD" {
+			// ADD is not a real change type, but it helps with the format changes part.
+			rrSet.ChangeType = "REPLACE"
+		} else if rrSet.ChangeType == "DELETE" {
+			// DELETE doesn't want any records or comments
+			rrSet.Records = []pdnsRecord{}
+			rrSet.Comments = []pdnsComment{}
+		}
+		payload.RRSets = append(payload.RRSets, rrSet)
+	}
+
+	if isNewZone {
+		payload.Name = header.Name
+		payload.Kind = "Native"
+		resp, err := pdnsCallAPI("POST", url, payload)
+		if err != nil {
+			return fmt.Errorf("error creating zone: %v", err)
+		}
+		if resp.StatusCode != 201 {
+			return fmt.Errorf("error creating zone: %s", resp.Status)
+		}
+	} else {
+		resp, err := pdnsCallAPI("PATCH", url, payload)
+		if err != nil {
+			return fmt.Errorf("error updating zone: %v", err)
+		}
+		if resp.StatusCode != 204 {
+			return fmt.Errorf("error updating zone: %s", resp.Status)
+		}
+	}
+
+	return nil
 }
 
 // Produces a list of zone changes to visualize the changes.
