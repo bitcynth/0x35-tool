@@ -228,3 +228,42 @@ func pdnsGetZoneChanges(initialZone pdnsZone, header zoneFileHeader, entries []z
 
 	return rrSetChanges, nil
 }
+
+// Produces a list of zone changes to visualize the changes.
+func formatChangesList(rrSetChanges map[string]pdnsRRSet, initialZone pdnsZone) []string {
+	// Sort the initial RRSets
+	initialRRSets := make(map[string]pdnsRRSet)
+	for _, rrSet := range initialZone.RRSets {
+		rrSetGroup := rrSet.Name + "-" + rrSet.Type
+		initialRRSets[rrSetGroup] = rrSet
+	}
+
+	lines := []string{}
+	for rrSetGroup, rrSet := range rrSetChanges {
+		initialRRSet := initialRRSets[rrSetGroup]
+
+		if rrSet.ChangeType == "ADD" {
+			for _, record := range rrSet.Records {
+				line := fmt.Sprintf("+ %s %d %s %s", rrSet.Name, rrSet.TTL, rrSet.Type, record.Content)
+				lines = append(lines, line)
+			}
+		} else if rrSet.ChangeType == "DELETE" {
+			for _, record := range rrSet.Records {
+				line := fmt.Sprintf("- %s %d %s %s", rrSet.Name, rrSet.TTL, rrSet.Type, record.Content)
+				lines = append(lines, line)
+			}
+		} else if rrSet.ChangeType == "REPLACE" {
+			for _, record := range rrSet.Records {
+				line := fmt.Sprintf("+ %s %d %s %s", rrSet.Name, rrSet.TTL, rrSet.Type, record.Content)
+				lines = append(lines, line)
+			}
+
+			for _, record := range initialRRSet.Records {
+				line := fmt.Sprintf("- %s %d %s %s", initialRRSet.Name, initialRRSet.TTL, initialRRSet.Type, record.Content)
+				lines = append(lines, line)
+			}
+		}
+	}
+
+	return lines
+}
