@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,6 +37,8 @@ type pdnsComment struct {
 	Account    string `json:"account"`
 	ModifiedAt int64  `json:"modified_at"`
 }
+
+var errNoSuchZone = errors.New("the zone doesn't exist")
 
 func pdnsCallAPI(method string, url string, payload interface{}) (*http.Response, error) {
 	var body io.Reader
@@ -76,6 +79,10 @@ func pdnsGetZone(zoneName string) (pdnsZone, error) {
 	resp, err := pdnsCallAPI("GET", url, nil)
 	if err != nil {
 		return zone, fmt.Errorf("error calling API: %v", err)
+	}
+
+	if resp.StatusCode == 404 {
+		return zone, errNoSuchZone
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&zone)
