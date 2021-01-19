@@ -31,16 +31,16 @@ type zoneFileExtraData struct {
 }
 
 // Entry with ExtraData and TTL specified
-var regexZoneEntryWithExtraTTL = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.]+)\s+([0-9]+)\s+([A-Z]+)\s+(.+)\s+({.*})$`)
+var regexZoneEntryWithExtraTTL = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.\*]+)\s+([0-9]+)\s+([A-Z]+)\s+(.+)\s+({.*})$`)
 
 // Entry with ExtraData specified but not TTL
-var regexZoneEntryWithExtra = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.]+)\s+([A-Z]+)\s+(.+)\s+({.*})$`)
+var regexZoneEntryWithExtra = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.\*]+)\s+([A-Z]+)\s+(.+)\s+({.*})$`)
 
 // Entry with TTL specified but not ExtraData
-var regexZoneEntryWithTTL = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.]+)\s+([0-9]+)\s+([A-Z]+)\s+(.+)$`)
+var regexZoneEntryWithTTL = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.\*]+)\s+([0-9]+)\s+([A-Z]+)\s+(.+)$`)
 
 // Entry with neither TTL or ExtraData specified
-var regexZoneEntry = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.]+)\s+([A-Z]+)\s+(.+)$`)
+var regexZoneEntry = regexp.MustCompile(`(?i)^([@a-z0-9\-_\.\*]+)\s+([A-Z]+)\s+(.+)$`)
 
 // Regex to extract a variable from the zone file body
 var regexZoneVariable = regexp.MustCompile(`%\(([a-zA-Z0-9\-_]+)\)%`)
